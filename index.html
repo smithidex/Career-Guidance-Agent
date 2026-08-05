@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Career Guide</title>
+    <script src="https://tailwindcss.com"></script>
+</head>
+<body class="bg-gray-900 text-gray-100 min-h-screen flex flex-col items-center p-4">
+
+    <div class="w-full max-w-2xl bg-gray-800 rounded-lg shadow-xl p-6 mt-4 flex flex-col h-[85vh]">
+        <h1 class="text-2xl font-bold text-center border-b border-gray-700 pb-3">💼 AI Career Guidance Agent</h1>
+        
+        <!-- Chat Container -->
+        <div id="chatBox" class="flex-1 overflow-y-auto space-y-4 my-4 p-2 border border-gray-700 rounded bg-gray-850">
+            <div class="bg-gray-700 p-3 rounded-lg max-w-[80%]">
+                Hello! I am your AI Career Guide. Ask me for a <b>Career Roadmap</b>, <b>Resume Review</b>, or start a <b>Mock Interview</b>!
+            </div>
+        </div>
+
+        <!-- Input Box -->
+        <div class="flex gap-2 pt-2 border-t border-gray-700">
+            <input type="text" id="userInput" class="flex-1 bg-gray-700 border border-gray-600 rounded p-3 text-white focus:outline-none focus:border-green-500" placeholder="Ask about your career, resume, or start an interview...">
+            <button onclick="sendMessage()" class="bg-green-600 hover:bg-green-700 text-white font-bold px-6 rounded transition">Send</button>
+        </div>
+    </div>
+
+    <script>
+        let chatHistory = [];
+
+        async function sendMessage() {
+            const inputField = document.getElementById("userInput");
+            const userText = inputField.value.trim();
+            const chatBox = document.getElementById("chatBox");
+
+            if (!userText) return;
+
+            // Display User Message
+            chatBox.innerHTML += `<div class="bg-blue-900 p-3 rounded-lg max-w-[80%] ml-auto text-right">${userText}</div>`;
+            inputField.value = "";
+            chatBox.scrollTop = chatBox.scrollHeight;
+
+            chatHistory.push({ role: "user", content: userText });
+
+            // Display "Thinking..."
+            const thinkingDiv = document.createElement("div");
+            thinkingDiv.className = "bg-gray-750 text-gray-400 p-3 rounded-lg max-w-[80%]";
+            thinkingDiv.innerText = "Thinking...";
+            chatBox.appendChild(thinkingDiv);
+            chatBox.scrollTop = chatBox.scrollHeight;
+
+            try {
+                // Calls your hidden python backend instead of Google directly
+                const response = await fetch("/api/chat", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ history: chatHistory })
+                });
+
+                const data = await response.json();
+                thinkingDiv.remove();
+
+                if (response.ok && data.response) {
+                    chatBox.innerHTML += `<div class="bg-gray-700 p-3 rounded-lg max-w-[80%] whitespace-pre-line">${data.response}</div>`;
+                    chatHistory.push({ role: "assistant", content: data.response });
+                } else {
+                    chatBox.innerHTML += `<div class="bg-red-900 p-3 rounded-lg max-w-[80%]">Error generating response. Server could not process request.</div>`;
+                }
+            } catch (error) {
+                thinkingDiv.remove();
+                chatBox.innerHTML += `<div class="bg-red-900 p-3 rounded-lg max-w-[80%]">Connection error occurred.</div>`;
+            }
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+    </script>
+</body>
+</html>
