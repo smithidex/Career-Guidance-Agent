@@ -15,9 +15,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Pull key from Render environment
 API_KEY = os.getenv("GEMINI_API_KEY")
-if API_KEY:
-    genai.configure(api_key=API_KEY)
 
 SYSTEM_PROMPT = (
     "You are an expert AI Career Guidance Coach. Your goal is to provide actionable direction, "
@@ -39,36 +38,36 @@ class ChatPayload(BaseModel):
 @app.post("/api/chat")
 async def chat_endpoint(payload: ChatPayload):
     if not API_KEY:
-        raise HTTPException(status_code=500, detail="Server configuration error: Missing API Key.")
+        return {"response": "Backend Server Error: The GEMINI_API_KEY environment variable is blank or missing inside Render settings."}
     
     try:
-        # Initializing the model with system prompts directly
+        # Re-verify and configure on request to ensure key is active
+        genai.configure(api_key=API_KEY)
         model = genai.GenerativeModel(
             model_name="gemini-2.0-flash",
             system_instruction=SYSTEM_PROMPT
         )
         
-        # Formulate structured payload match for official Gemini endpoints
-        formatted_contents = []
-        for msg in payload.history:
-            # Match internal Gemini roles ('user' or 'model')
-            target_role = "user" if msg.role == "user" else "model"
-            formatted_contents.append({
-                "role": target_role,
-                "parts": [{"text": msg.content}]
-            })
-            
-        # Fast direct generation bypasses chat tracking errors
-        response = model.generate_content(contents=formatted_contents)
+        # Pull the absolute latest text message input from user
+        user_message = payload.history[-1].content
         
-        return {"response": response.text}
+        # Send raw string directly to Gemini API
+        response = model.generate_content(user_message)
+        
+        if response.text:
+            return {"response": response.text}
+        else:
+            return {"response": "API Warning: Received empty text candidate back from Gemini."}
+            
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        error_msg = str(e)
+        print(f"CRITICAL ENGINE ERROR: {error_msg}")
+        return {"response": f"Gemini Engine Crash details: {error_msg}"}
 
 @app.get("/", response_class=HTMLResponse)
 async def serve_home():
-    # Looks explicitly for index.html in the same directory
     if os.path.exists("index.html"):
         with open("index.html", "r", encoding="utf-8") as f:
             return f.read()
     return "<h1>Frontend index.html file not found in directory root</h1>"
+
