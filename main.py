@@ -58,7 +58,8 @@ async def chat_endpoint(payload: ChatPayload):
             max_tokens=1024,
         )
         
-        reply = completion.choices.message.content
+        # FIXED: Added [0] index to parse the list item safely
+        reply = completion.choices[0].message.content
         if reply:
             return {"response": reply}
         else:
