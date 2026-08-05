@@ -7,7 +7,6 @@ import google.generativeai as genai
 
 app = FastAPI()
 
-# Allow your frontend to talk to your backend safely
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -16,7 +15,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Grab the secret API Key from server environment
 API_KEY = os.getenv("GEMINI_API_KEY")
 if API_KEY:
     genai.configure(api_key=API_KEY)
@@ -44,26 +42,33 @@ async def chat_endpoint(payload: ChatPayload):
         raise HTTPException(status_code=500, detail="Server configuration error: Missing API Key.")
     
     try:
+        # Initializing the model with system prompts directly
         model = genai.GenerativeModel(
             model_name="gemini-2.0-flash",
             system_instruction=SYSTEM_PROMPT
         )
         
-        # Format conversation history for Gemini
-        gemini_history = []
-        for msg in payload.history[:-1]:
-            role = "user" if msg.role == "user" else "model"
-            gemini_history.append({"role": role, "parts": [msg.content]})
+        # Formulate structured payload match for official Gemini endpoints
+        formatted_contents = []
+        for msg in payload.history:
+            # Match internal Gemini roles ('user' or 'model')
+            target_role = "user" if msg.role == "user" else "model"
+            formatted_contents.append({
+                "role": target_role,
+                "parts": [{"text": msg.content}]
+            })
             
-        chat = model.start_chat(history=gemini_history)
-        response = chat.send_message(payload.history[-1].content)
+        # Fast direct generation bypasses chat tracking errors
+        response = model.generate_content(contents=formatted_contents)
         
         return {"response": response.text}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-# Serves the user interface automatically at the base URL
 @app.get("/", response_class=HTMLResponse)
 async def serve_home():
-    with open("index.html", "r") as f:
-        return f.read()
+    # Looks explicitly for index.html in the same directory
+    if os.path.exists("index.html"):
+        with open("index.html", "r", encoding="utf-8") as f:
+            return f.read()
+    return "<h1>Frontend index.html file not found in directory root</h1>"
