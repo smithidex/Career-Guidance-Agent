@@ -1,77 +1,387 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Career Guide</title>
-    <!-- Embedded structural framework stylesheet backup -->
-    <link rel="stylesheet" href="https://cloudflare.com">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Compass — AI Career Guidance Agent</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:            #0B0D12;
+    --sidebar:       #12151C;
+    --panel:         #171B24;
+    --panel-alt:     #1D212B;
+    --border:        #262B36;
+    --text:          #ECEEF1;
+    --text-muted:    #8891A0;
+    --gold:          #D9A441;
+    --gold-soft:     #3A3222;
+    --teal:          #3EC9B0;
+    --error:         #E5484D;
+  }
+  html,body{ height:100%; }
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:'Inter',system-ui,sans-serif;
+  }
+  .font-display{ font-family:'Sora',system-ui,sans-serif; }
+
+  ::-webkit-scrollbar{ width:8px; height:8px; }
+  ::-webkit-scrollbar-track{ background:transparent; }
+  ::-webkit-scrollbar-thumb{ background:#2E3441; border-radius:8px; }
+  ::-webkit-scrollbar-thumb:hover{ background:#3A4152; }
+
+  .msg-in{ animation: rise .25s ease-out; }
+  @keyframes rise{
+    from{ opacity:0; transform:translateY(6px); }
+    to{ opacity:1; transform:translateY(0); }
+  }
+
+  .dot{ animation: pulse 1.1s ease-in-out infinite; }
+  .dot:nth-child(2){ animation-delay:.15s; }
+  .dot:nth-child(3){ animation-delay:.3s; }
+  @keyframes pulse{
+    0%,60%,100%{ opacity:.25; transform:translateY(0); }
+    30%{ opacity:1; transform:translateY(-2px); }
+  }
+
+  .dropzone-active{
+    outline: 2px dashed var(--gold);
+    outline-offset: -8px;
+    background: var(--gold-soft) !important;
+  }
+
+  #sidebar{ transition: transform .25s ease; }
+  @media (max-width: 900px){
+    #sidebar{
+      position:fixed; inset:0 auto 0 0; z-index:40;
+      width:280px; transform:translateX(-100%);
+    }
+    #sidebar.open{ transform:translateX(0); }
+    #sidebarBackdrop{ display:none; }
+    #sidebarBackdrop.open{ display:block; }
+  }
+
+  .waypoint{ border-color:var(--border); }
+  .waypoint:hover{ border-color:var(--gold); background:var(--gold-soft); }
+
+  textarea::placeholder, input::placeholder{ color:#5C6472; }
+</style>
 </head>
-<body class="bg-gray-900 text-gray-100 min-h-screen flex flex-col items-center p-4" style="background-color: #111827;">
+<body class="flex h-screen overflow-hidden">
 
-    <div class="w-full max-w-2xl bg-gray-800 rounded-lg shadow-xl p-6 mt-4 flex flex-col h-[85vh]" style="background-color: #1f2937; margin-top: 2rem;">
-        <h1 class="text-2xl font-bold text-center border-b border-gray-700 pb-3" style="color: #ffffff; border-bottom-width: 1px; border-color: #374151; padding-bottom: 0.75rem; font-size: 1.5rem; text-align: center;">💼 AI Career Guidance Agent</h1>
-        
-        <!-- Chat Container -->
-        <div id="chatBox" class="flex-1 overflow-y-auto space-y-4 my-4 p-4 border border-gray-700 rounded bg-gray-900" style="flex: 1 1 0%; overflow-y: auto; background-color: #111827; border-width: 1px; border-color: #374151; padding: 1rem; margin-top: 1rem; margin-bottom: 1rem; border-radius: 0.375rem; min-height: 350px;">
-            <div class="p-3 rounded-lg max-w-[80%]" style="background-color: #374151; padding: 0.75rem; border-radius: 0.5rem; max-width: 80%; color: #f3f4f6;">
-                Hello! I am your AI Career Guide. Ask me for a <b>Career Roadmap</b>, <b>Resume Review</b>, or start a <b>Mock Interview</b>!
-            </div>
-        </div>
+  <!-- Mobile backdrop -->
+  <div id="sidebarBackdrop" class="fixed inset-0 bg-black/60 z-30" onclick="toggleSidebar(false)"></div>
 
-        <!-- Input Box -->
-        <div class="flex gap-2 pt-4 border-t border-gray-700" style="display: flex; gap: 0.5rem; padding-top: 1rem; border-t-width: 1px; border-color: #374151;">
-            <input type="text" id="userInput" class="flex-1 bg-gray-700 border border-gray-600 rounded p-3 text-white focus:outline-none" style="flex: 1 1 0%; background-color: #4b5563; border-width: 1px; border-color: #4b5563; color: #ffffff; padding: 0.75rem; border-radius: 0.375rem;" placeholder="Ask about your career, resume, or start an interview...">
-            <button onclick="sendMessage()" class="bg-green-600 hover:bg-green-700 text-white font-bold px-6 rounded transition" style="background-color: #059669; color: #ffffff; font-weight: 700; padding-left: 1.5rem; padding-right: 1.5rem; border-radius: 0.375rem;">Send</button>
+  <!-- Sidebar -->
+  <aside id="sidebar" class="w-[280px] shrink-0 h-full flex flex-col justify-between p-6" style="background:var(--sidebar); border-right:1px solid var(--border);">
+    <div>
+      <div class="flex items-center gap-3">
+        <svg width="34" height="34" viewBox="0 0 34 34" fill="none">
+          <circle cx="17" cy="17" r="15.5" stroke="#D9A441" stroke-width="1.5"/>
+          <path d="M17 4 L17 8 M17 26 L17 30 M4 17 L8 17 M26 17 L30 17" stroke="#8891A0" stroke-width="1.2"/>
+          <path d="M22 11 L17 17 L12 23 L17 17 Z" fill="#D9A441"/>
+        </svg>
+        <div>
+          <div class="font-display font-bold text-lg leading-none">Compass</div>
+          <div class="text-[11px] tracking-wide" style="color:var(--text-muted)">AI CAREER GUIDANCE</div>
         </div>
+      </div>
+
+      <p class="mt-5 text-sm leading-relaxed" style="color:var(--text-muted)">
+        Get a personalized roadmap, honest resume feedback, or run a live mock interview — one focused conversation at a time.
+      </p>
+
+      <div class="mt-8">
+        <div class="text-[11px] font-semibold tracking-wider mb-3" style="color:var(--text-muted)">HOW TO USE IT</div>
+        <ul class="space-y-3 text-sm">
+          <li class="flex gap-3">
+            <span class="mt-0.5" style="color:var(--gold)">🗺️</span>
+            <span><span class="font-medium">Career Roadmap</span><br><span style="color:var(--text-muted)">Skills, projects, and where to apply — phased out.</span></span>
+          </li>
+          <li class="flex gap-3">
+            <span class="mt-0.5" style="color:var(--gold)">📝</span>
+            <span><span class="font-medium">Resume Review</span><br><span style="color:var(--text-muted)">Paste your text or attach a .txt file for feedback.</span></span>
+          </li>
+          <li class="flex gap-3">
+            <span class="mt-0.5" style="color:var(--gold)">🎙️</span>
+            <span><span class="font-medium">Mock Interview</span><br><span style="color:var(--text-muted)">One question at a time, with feedback after each answer.</span></span>
+          </li>
+        </ul>
+      </div>
     </div>
 
-    <script>
-        let chatHistory = [];
+    <div class="text-[11px] pt-4" style="color:var(--text-muted); border-top:1px solid var(--border);">
+      Powered by Groq · Responses are AI-generated — verify important advice.
+    </div>
+  </aside>
 
-        async function sendMessage() {
-            const inputField = document.getElementById("userInput");
-            const userText = inputField.value.trim();
-            const chatBox = document.getElementById("chatBox");
+  <!-- Main -->
+  <main class="flex-1 h-full flex flex-col min-w-0">
 
-            if (!userText) return;
+    <!-- Header -->
+    <header class="flex items-center gap-3 px-5 py-4 shrink-0" style="border-bottom:1px solid var(--border); background:var(--bg);">
+      <button onclick="toggleSidebar()" class="md:hidden p-2 rounded-lg" style="border:1px solid var(--border);" aria-label="Toggle sidebar">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M2 4h14M2 9h14M2 14h14" stroke="#ECEEF1" stroke-width="1.5" stroke-linecap="round"/></svg>
+      </button>
+      <div class="min-w-0">
+        <h1 class="font-display font-semibold text-base truncate">AI Career Guidance Agent</h1>
+        <div class="text-xs flex items-center gap-1.5" style="color:var(--text-muted)">
+          <span class="w-1.5 h-1.5 rounded-full inline-block" style="background:var(--teal)"></span>
+          Ready
+        </div>
+      </div>
+    </header>
 
-            // Render User Input View
-            chatBox.innerHTML += `<div class="p-3 rounded-lg max-w-[80%] ml-auto text-right" style="background-color: #1e3a8a; padding: 0.75rem; border-radius: 0.5rem; max-width: 80%; margin-left: auto; text-align: left; color: #f3f4f6; margin-top: 0.75rem;">${userText}</div>`;
-            inputField.value = "";
-            chatBox.scrollTop = chatBox.scrollHeight;
+    <!-- Chat -->
+    <div id="chatBox" class="flex-1 overflow-y-auto px-5 py-6 space-y-4">
+      <div class="msg-in max-w-[75%] p-4 rounded-2xl rounded-tl-sm text-sm leading-relaxed" style="background:var(--panel); border:1px solid var(--border);">
+        Hey, I'm your AI Career Guide 👋 Ask me for a <b>Career Roadmap</b>, a <b>Resume Review</b>, or start a <b>Mock Interview</b> — or use the quick actions below.
+      </div>
+    </div>
 
-            chatHistory.push({ role: "user", content: userText });
+    <!-- Drop hint (shown while dragging a file over the chat) -->
+    <div id="dropHint" class="hidden text-center text-sm py-2" style="color:var(--gold)">Drop file to attach it to your message</div>
 
-            // Render Loading Anchor
-            const thinkingDiv = document.createElement("div");
-            thinkingDiv.style = "background-color: #374151; padding: 0.75rem; border-radius: 0.5rem; max-width: 80%; color: #9ca3af; margin-top: 0.75rem;";
-            thinkingDiv.innerText = "Thinking...";
-            chatBox.appendChild(thinkingDiv);
-            chatBox.scrollTop = chatBox.scrollHeight;
+    <!-- Composer -->
+    <div class="px-5 pb-5 pt-2 shrink-0" style="border-top:1px solid var(--border); background:var(--bg);">
 
-            try {
-                const response = await fetch("/api/chat", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ history: chatHistory })
-                });
+      <!-- Preset buttons -->
+      <div class="flex flex-wrap gap-2 mb-3">
+        <button onclick="usePreset('🗺️ Generate a Career Roadmap')" class="waypoint text-sm px-3.5 py-2 rounded-full border transition">🗺️ Generate a Career Roadmap</button>
+        <button onclick="usePreset('📝 Review My Resume Text')" class="waypoint text-sm px-3.5 py-2 rounded-full border transition">📝 Review My Resume Text</button>
+        <button onclick="usePreset('🎙️ Start a Mock Interview')" class="waypoint text-sm px-3.5 py-2 rounded-full border transition">🎙️ Start a Mock Interview</button>
+      </div>
 
-                const data = await response.json();
-                thinkingDiv.remove();
+      <!-- Attached file chip -->
+      <div id="attachmentChip" class="hidden items-center gap-2 mb-2 text-xs px-3 py-1.5 rounded-lg w-fit" style="background:var(--panel-alt); border:1px solid var(--border); color:var(--text-muted)">
+        <span>📎</span>
+        <span id="attachmentName" class="truncate max-w-[220px]"></span>
+        <button onclick="clearAttachment()" class="ml-1 hover:text-white" aria-label="Remove attachment">✕</button>
+      </div>
 
-                if (response.ok && data.response) {
-                    chatBox.innerHTML += `<div class="p-3 rounded-lg max-w-[80%]" style="background-color: #374151; padding: 0.75rem; border-radius: 0.5rem; max-width: 80%; color: #f3f4f6; margin-top: 0.75rem; white-space: pre-line;">${data.response}</div>`;
-                    chatHistory.push({ role: "assistant", content: data.response });
-                } else {
-                    chatBox.innerHTML += `<div class="p-3 rounded-lg max-w-[80%]" style="background-color: #7f1d1d; padding: 0.75rem; border-radius: 0.5rem; max-width: 80%; color: #fca5a5; margin-top: 0.75rem;">Error generating response. Make sure GEMINI_API_KEY environment variable is configured in Render.</div>`;
-                }
-            } catch (error) {
-                thinkingDiv.remove();
-                chatBox.innerHTML += `<div class="p-3 rounded-lg max-w-[80%]" style="background-color: #7f1d1d; padding: 0.75rem; border-radius: 0.5rem; max-width: 80%; color: #fca5a5; margin-top: 0.75rem;">Connection error occurred. Server offline.</div>`;
-            }
-            chatBox.scrollTop = chatBox.scrollHeight;
-        }
-    </script>
+      <div class="flex items-end gap-2">
+        <input type="file" id="fileInput" class="hidden" accept=".txt,.pdf,.doc,.docx" onchange="handleFileSelect(event)">
+        <button onclick="document.getElementById('fileInput').click()" title="Attach file" class="shrink-0 p-3 rounded-xl transition" style="border:1px solid var(--border);">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M12.5 6.5 7 12a2.5 2.5 0 1 1-3.5-3.5L9 3a1.7 1.7 0 1 1 2.4 2.4L6 11" stroke="#8891A0" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+
+        <input
+          type="text"
+          id="userInput"
+          placeholder="Ask about your career, resume, or start an interview..."
+          class="flex-1 rounded-xl px-4 py-3 text-sm focus:outline-none"
+          style="background:var(--panel); border:1px solid var(--border); color:var(--text);"
+          onkeydown="if(event.key==='Enter'){ event.preventDefault(); sendMessage(); }"
+        >
+
+        <button onclick="sendMessage()" class="shrink-0 font-semibold text-sm px-5 py-3 rounded-xl transition" style="background:var(--gold); color:#1A1408;">
+          Send
+        </button>
+      </div>
+    </div>
+  </main>
+
+<script>
+  let chatHistory = [];
+  let attachedFile = null; // { name, content|null }
+
+  // ---------- Sidebar (mobile) ----------
+  function toggleSidebar(force){
+    const sb = document.getElementById('sidebar');
+    const bd = document.getElementById('sidebarBackdrop');
+    const open = force !== undefined ? force : !sb.classList.contains('open');
+    sb.classList.toggle('open', open);
+    bd.classList.toggle('open', open);
+  }
+  document.getElementById('sidebarBackdrop').classList.remove('open');
+
+  // ---------- Helpers ----------
+  function escapeHtml(str){
+    const div = document.createElement('div');
+    div.innerText = str;
+    return div.innerHTML;
+  }
+
+  function scrollToBottom(){
+    const chatBox = document.getElementById('chatBox');
+    chatBox.scrollTop = chatBox.scrollHeight;
+  }
+
+  function appendUserMessage(text){
+    const chatBox = document.getElementById('chatBox');
+    const div = document.createElement('div');
+    div.className = 'msg-in max-w-[75%] ml-auto p-4 rounded-2xl rounded-tr-sm text-sm leading-relaxed whitespace-pre-line';
+    div.style.background = 'var(--gold-soft)';
+    div.style.border = '1px solid #4A3E24';
+    div.innerHTML = escapeHtml(text);
+    chatBox.appendChild(div);
+    scrollToBottom();
+  }
+
+  function appendAssistantMessage(text){
+    const chatBox = document.getElementById('chatBox');
+    const div = document.createElement('div');
+    div.className = 'msg-in max-w-[75%] p-4 rounded-2xl rounded-tl-sm text-sm leading-relaxed whitespace-pre-line';
+    div.style.background = 'var(--panel)';
+    div.style.border = '1px solid var(--border)';
+    div.innerHTML = escapeHtml(text);
+    chatBox.appendChild(div);
+    scrollToBottom();
+  }
+
+  function appendErrorMessage(text){
+    const chatBox = document.getElementById('chatBox');
+    const div = document.createElement('div');
+    div.className = 'msg-in max-w-[75%] p-4 rounded-2xl text-sm leading-relaxed';
+    div.style.background = '#2A1416';
+    div.style.border = '1px solid #4C2226';
+    div.style.color = '#FDA4AF';
+    div.innerText = text;
+    chatBox.appendChild(div);
+    scrollToBottom();
+  }
+
+  function showTyping(){
+    const chatBox = document.getElementById('chatBox');
+    const div = document.createElement('div');
+    div.id = 'typingIndicator';
+    div.className = 'msg-in max-w-[75%] p-4 rounded-2xl rounded-tl-sm flex gap-1.5 items-center';
+    div.style.background = 'var(--panel)';
+    div.style.border = '1px solid var(--border)';
+    div.innerHTML = `
+      <span class="dot w-1.5 h-1.5 rounded-full" style="background:#8891A0"></span>
+      <span class="dot w-1.5 h-1.5 rounded-full" style="background:#8891A0"></span>
+      <span class="dot w-1.5 h-1.5 rounded-full" style="background:#8891A0"></span>`;
+    chatBox.appendChild(div);
+    scrollToBottom();
+  }
+
+  function removeTyping(){
+    const el = document.getElementById('typingIndicator');
+    if (el) el.remove();
+  }
+
+  // ---------- Preset buttons ----------
+  function usePreset(text){
+    const input = document.getElementById('userInput');
+    input.value = text;
+    sendMessage();
+  }
+
+  // ---------- File attach ----------
+  function handleFileSelect(event){
+    const file = event.target.files[0];
+    if (file) processFile(file);
+    event.target.value = ''; // allow re-selecting the same file later
+  }
+
+  function processFile(file){
+    const isPlainText = file.name.toLowerCase().endsWith('.txt') || file.type === 'text/plain';
+
+    if (isPlainText) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        attachedFile = { name: file.name, content: e.target.result };
+        showAttachmentChip(file.name);
+      };
+      reader.onerror = () => {
+        attachedFile = { name: file.name, content: null };
+        showAttachmentChip(file.name + ' (could not read file — you can paste the text instead)');
+      };
+      reader.readAsText(file);
+    } else {
+      // PDF/DOC/DOCX: no reliable client-side text extraction without extra libraries.
+      // Attach the filename only and let the user know they should paste the text.
+      attachedFile = { name: file.name, content: null };
+      showAttachmentChip(file.name + ' — attached, but please paste the resume text below so I can review it');
+    }
+  }
+
+  function showAttachmentChip(label){
+    const chip = document.getElementById('attachmentChip');
+    document.getElementById('attachmentName').innerText = label;
+    chip.classList.remove('hidden');
+    chip.classList.add('flex');
+  }
+
+  function clearAttachment(){
+    attachedFile = null;
+    const chip = document.getElementById('attachmentChip');
+    chip.classList.add('hidden');
+    chip.classList.remove('flex');
+  }
+
+  // Drag & drop over the chat panel
+  const chatBoxEl = document.getElementById('chatBox');
+  const dropHint = document.getElementById('dropHint');
+  ['dragenter','dragover'].forEach(evt =>
+    chatBoxEl.addEventListener(evt, (e) => {
+      e.preventDefault();
+      chatBoxEl.classList.add('dropzone-active');
+      dropHint.classList.remove('hidden');
+    })
+  );
+  ['dragleave','drop'].forEach(evt =>
+    chatBoxEl.addEventListener(evt, (e) => {
+      e.preventDefault();
+      chatBoxEl.classList.remove('dropzone-active');
+      dropHint.classList.add('hidden');
+    })
+  );
+  chatBoxEl.addEventListener('drop', (e) => {
+    const file = e.dataTransfer.files[0];
+    if (file) processFile(file);
+  });
+
+  // ---------- Send ----------
+  async function sendMessage(){
+    const inputField = document.getElementById('userInput');
+    let userText = inputField.value.trim();
+
+    if (!userText && !attachedFile) return;
+
+    // Fold attached plain-text content into the outgoing message
+    let payloadText = userText;
+    if (attachedFile) {
+      if (attachedFile.content) {
+        payloadText = `Resume/document content from "${attachedFile.name}":\n${attachedFile.content}\n\n${userText ? 'User message: ' + userText : 'Please review this.'}`;
+      } else if (!userText) {
+        payloadText = `I tried to attach "${attachedFile.name}" but couldn't extract its text automatically. Let's continue without it for now.`;
+      }
+    }
+
+    appendUserMessage(userText || `📎 ${attachedFile.name}`);
+    inputField.value = '';
+    clearAttachment();
+
+    chatHistory.push({ role: 'user', content: payloadText });
+    showTyping();
+
+    try {
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ history: chatHistory })
+      });
+
+      const data = await response.json();
+      removeTyping();
+
+      if (response.ok && data.response) {
+        appendAssistantMessage(data.response);
+        chatHistory.push({ role: 'assistant', content: data.response });
+      } else {
+        appendErrorMessage(data.response || 'Error generating response.');
+      }
+    } catch (error) {
+      removeTyping();
+      appendErrorMessage('Connection error occurred. Please try again.');
+    }
+  }
+</script>
 </body>
 </html>
