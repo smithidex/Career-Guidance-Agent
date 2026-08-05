@@ -3,7 +3,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
-import google.generativeai as genai
+from groq import Groq
 
 app = FastAPI()
 
@@ -15,8 +15,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Pull key from Render environment
-API_KEY = os.getenv("GEMINI_API_KEY")
+# Pull key safely from Render environment settings
+API_KEY = os.getenv("GROQ_API_KEY")
 
 SYSTEM_PROMPT = (
     "You are an expert AI Career Guidance Coach. Your goal is to provide actionable direction, "
@@ -38,31 +38,36 @@ class ChatPayload(BaseModel):
 @app.post("/api/chat")
 async def chat_endpoint(payload: ChatPayload):
     if not API_KEY:
-        return {"response": "Backend Server Error: The GEMINI_API_KEY environment variable is blank or missing inside Render settings."}
+        return {"response": "Backend Server Error: The GROQ_API_KEY environment variable is blank or missing inside Render settings."}
     
     try:
-        # Re-verify and configure on request to ensure key is active
-        genai.configure(api_key=API_KEY)
-        model = genai.GenerativeModel(
-            model_name="gemini-2.0-flash",
-            system_instruction=SYSTEM_PROMPT
-        )
+        # Initialize Groq client securely
+        client = Groq(api_key=API_KEY)
         
-        # Pull the absolute latest text message input from user
+        # Extract the latest text user input
         user_message = payload.history[-1].content
         
-        # Send raw string directly to Gemini API
-        response = model.generate_content(user_message)
+        # Call Groq's high-speed Llama 3 70B model
+        completion = client.chat.completions.create(
+            model="llama3-70b-8192",
+            messages=[
+                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "user", "content": user_message}
+            ],
+            temperature=0.7,
+            max_tokens=1024,
+        )
         
-        if response.text:
-            return {"response": response.text}
+        reply = completion.choices[0].message.content
+        if reply:
+            return {"response": reply}
         else:
-            return {"response": "API Warning: Received empty text candidate back from Gemini."}
+            return {"response": "API Warning: Received empty text from Groq engine."}
             
     except Exception as e:
         error_msg = str(e)
         print(f"CRITICAL ENGINE ERROR: {error_msg}")
-        return {"response": f"Gemini Engine Crash details: {error_msg}"}
+        return {"response": f"Groq Engine Error Details: {error_msg}"}
 
 @app.get("/", response_class=HTMLResponse)
 async def serve_home():
