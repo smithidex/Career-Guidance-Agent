@@ -4,24 +4,25 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI Career Guide</title>
-    <script src="https://tailwindcss.com"></script>
+    <!-- Embedded structural framework stylesheet backup -->
+    <link rel="stylesheet" href="https://cloudflare.com">
 </head>
-<body class="bg-gray-900 text-gray-100 min-h-screen flex flex-col items-center p-4">
+<body class="bg-gray-900 text-gray-100 min-h-screen flex flex-col items-center p-4" style="background-color: #111827;">
 
-    <div class="w-full max-w-2xl bg-gray-800 rounded-lg shadow-xl p-6 mt-4 flex flex-col h-[85vh]">
-        <h1 class="text-2xl font-bold text-center border-b border-gray-700 pb-3">💼 AI Career Guidance Agent</h1>
+    <div class="w-full max-w-2xl bg-gray-800 rounded-lg shadow-xl p-6 mt-4 flex flex-col h-[85vh]" style="background-color: #1f2937; margin-top: 2rem;">
+        <h1 class="text-2xl font-bold text-center border-b border-gray-700 pb-3" style="color: #ffffff; border-bottom-width: 1px; border-color: #374151; padding-bottom: 0.75rem; font-size: 1.5rem; text-align: center;">💼 AI Career Guidance Agent</h1>
         
         <!-- Chat Container -->
-        <div id="chatBox" class="flex-1 overflow-y-auto space-y-4 my-4 p-2 border border-gray-700 rounded bg-gray-850">
-            <div class="bg-gray-700 p-3 rounded-lg max-w-[80%]">
+        <div id="chatBox" class="flex-1 overflow-y-auto space-y-4 my-4 p-4 border border-gray-700 rounded bg-gray-900" style="flex: 1 1 0%; overflow-y: auto; background-color: #111827; border-width: 1px; border-color: #374151; padding: 1rem; margin-top: 1rem; margin-bottom: 1rem; border-radius: 0.375rem; min-height: 350px;">
+            <div class="p-3 rounded-lg max-w-[80%]" style="background-color: #374151; padding: 0.75rem; border-radius: 0.5rem; max-width: 80%; color: #f3f4f6;">
                 Hello! I am your AI Career Guide. Ask me for a <b>Career Roadmap</b>, <b>Resume Review</b>, or start a <b>Mock Interview</b>!
             </div>
         </div>
 
         <!-- Input Box -->
-        <div class="flex gap-2 pt-2 border-t border-gray-700">
-            <input type="text" id="userInput" class="flex-1 bg-gray-700 border border-gray-600 rounded p-3 text-white focus:outline-none focus:border-green-500" placeholder="Ask about your career, resume, or start an interview...">
-            <button onclick="sendMessage()" class="bg-green-600 hover:bg-green-700 text-white font-bold px-6 rounded transition">Send</button>
+        <div class="flex gap-2 pt-4 border-t border-gray-700" style="display: flex; gap: 0.5rem; padding-top: 1rem; border-t-width: 1px; border-color: #374151;">
+            <input type="text" id="userInput" class="flex-1 bg-gray-700 border border-gray-600 rounded p-3 text-white focus:outline-none" style="flex: 1 1 0%; background-color: #4b5563; border-width: 1px; border-color: #4b5563; color: #ffffff; padding: 0.75rem; border-radius: 0.375rem;" placeholder="Ask about your career, resume, or start an interview...">
+            <button onclick="sendMessage()" class="bg-green-600 hover:bg-green-700 text-white font-bold px-6 rounded transition" style="background-color: #059669; color: #ffffff; font-weight: 700; padding-left: 1.5rem; padding-right: 1.5rem; border-radius: 0.375rem;">Send</button>
         </div>
     </div>
 
@@ -35,22 +36,21 @@
 
             if (!userText) return;
 
-            // Display User Message
-            chatBox.innerHTML += `<div class="bg-blue-900 p-3 rounded-lg max-w-[80%] ml-auto text-right">${userText}</div>`;
+            // Render User Input View
+            chatBox.innerHTML += `<div class="p-3 rounded-lg max-w-[80%] ml-auto text-right" style="background-color: #1e3a8a; padding: 0.75rem; border-radius: 0.5rem; max-width: 80%; margin-left: auto; text-align: left; color: #f3f4f6; margin-top: 0.75rem;">${userText}</div>`;
             inputField.value = "";
             chatBox.scrollTop = chatBox.scrollHeight;
 
             chatHistory.push({ role: "user", content: userText });
 
-            // Display "Thinking..."
+            // Render Loading Anchor
             const thinkingDiv = document.createElement("div");
-            thinkingDiv.className = "bg-gray-750 text-gray-400 p-3 rounded-lg max-w-[80%]";
+            thinkingDiv.style = "background-color: #374151; padding: 0.75rem; border-radius: 0.5rem; max-width: 80%; color: #9ca3af; margin-top: 0.75rem;";
             thinkingDiv.innerText = "Thinking...";
             chatBox.appendChild(thinkingDiv);
             chatBox.scrollTop = chatBox.scrollHeight;
 
             try {
-                // Calls your hidden python backend instead of Google directly
                 const response = await fetch("/api/chat", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
@@ -61,14 +61,14 @@
                 thinkingDiv.remove();
 
                 if (response.ok && data.response) {
-                    chatBox.innerHTML += `<div class="bg-gray-700 p-3 rounded-lg max-w-[80%] whitespace-pre-line">${data.response}</div>`;
+                    chatBox.innerHTML += `<div class="p-3 rounded-lg max-w-[80%]" style="background-color: #374151; padding: 0.75rem; border-radius: 0.5rem; max-width: 80%; color: #f3f4f6; margin-top: 0.75rem; white-space: pre-line;">${data.response}</div>`;
                     chatHistory.push({ role: "assistant", content: data.response });
                 } else {
-                    chatBox.innerHTML += `<div class="bg-red-900 p-3 rounded-lg max-w-[80%]">Error generating response. Server could not process request.</div>`;
+                    chatBox.innerHTML += `<div class="p-3 rounded-lg max-w-[80%]" style="background-color: #7f1d1d; padding: 0.75rem; border-radius: 0.5rem; max-width: 80%; color: #fca5a5; margin-top: 0.75rem;">Error generating response. Make sure GEMINI_API_KEY environment variable is configured in Render.</div>`;
                 }
             } catch (error) {
                 thinkingDiv.remove();
-                chatBox.innerHTML += `<div class="bg-red-900 p-3 rounded-lg max-w-[80%]">Connection error occurred.</div>`;
+                chatBox.innerHTML += `<div class="p-3 rounded-lg max-w-[80%]" style="background-color: #7f1d1d; padding: 0.75rem; border-radius: 0.5rem; max-width: 80%; color: #fca5a5; margin-top: 0.75rem;">Connection error occurred. Server offline.</div>`;
             }
             chatBox.scrollTop = chatBox.scrollHeight;
         }
