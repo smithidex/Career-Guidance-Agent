@@ -47,9 +47,9 @@ async def chat_endpoint(payload: ChatPayload):
         # Extract the latest text user input
         user_message = payload.history[-1].content
         
-        # Call Groq's high-speed Llama 3 70B model
+        # Call Groq's active production Qwen model
         completion = client.chat.completions.create(
-            model="llama3-70b-8192",
+            model="qwen/qwen3.6-27b",
             messages=[
                 {"role": "system", "content": SYSTEM_PROMPT},
                 {"role": "user", "content": user_message}
@@ -58,7 +58,7 @@ async def chat_endpoint(payload: ChatPayload):
             max_tokens=1024,
         )
         
-        reply = completion.choices[0].message.content
+        reply = completion.choices.message.content
         if reply:
             return {"response": reply}
         else:
@@ -75,4 +75,3 @@ async def serve_home():
         with open("index.html", "r", encoding="utf-8") as f:
             return f.read()
     return "<h1>Frontend index.html file not found in directory root</h1>"
-
