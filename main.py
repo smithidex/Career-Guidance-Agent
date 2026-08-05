@@ -1,4 +1,5 @@
 import os
+import re
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
@@ -15,7 +16,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Pull key safely from Render environment settings
 API_KEY = os.getenv("GROQ_API_KEY")
 
 SYSTEM_PROMPT = (
@@ -28,47 +28,63 @@ SYSTEM_PROMPT = (
     "provide immediate constructive feedback on their answer, and then ask the next question."
 )
 
+
 class ChatMessage(BaseModel):
     role: str
     content: str
 
+
 class ChatPayload(BaseModel):
     history: list[ChatMessage]
+
+
+def strip_thinking_tags(text: str) -> str:
+    """Defensive safety net: removes any stray <think>...</think> blocks
+    that reasoning models occasionally leak even with reasoning_format='hidden'."""
+    if not text:
+        return text
+    cleaned = re.sub(r"<think>.*?</think>", "", text, flags=re.DOTALL)
+    return cleaned.strip()
+
 
 @app.post("/api/chat")
 async def chat_endpoint(payload: ChatPayload):
     if not API_KEY:
         return {"response": "Backend Server Error: The GROQ_API_KEY environment variable is blank or missing inside Render settings."}
-    
+
+    if not payload.history:
+        return {"response": "No message received."}
+
     try:
-        # Initialize Groq client securely
         client = Groq(api_key=API_KEY)
-        
-        # Extract the latest text user input
-        user_message = payload.history[-1].content
-        
-        # Call Groq's active production Qwen model
+
+        # Send the FULL conversation history (not just the last message) so the
+        # model retains context across turns — required for the Mock Interview flow.
+        messages = [{"role": "system", "content": SYSTEM_PROMPT}] + [
+            {"role": m.role, "content": m.content} for m in payload.history
+        ]
+
         completion = client.chat.completions.create(
             model="qwen/qwen3.6-27b",
-            messages=[
-                {"role": "system", "content": SYSTEM_PROMPT},
-                {"role": "user", "content": user_message}
-            ],
+            messages=messages,
             temperature=0.7,
             max_tokens=1024,
+            reasoning_format="hidden",  # hides internal chain-of-thought; only final answer returned
         )
-        
-        # FIXED: Added [0] index to parse the list item safely
+
         reply = completion.choices[0].message.content
+        reply = strip_thinking_tags(reply)
+
         if reply:
             return {"response": reply}
         else:
             return {"response": "API Warning: Received empty text from Groq engine."}
-            
+
     except Exception as e:
         error_msg = str(e)
         print(f"CRITICAL ENGINE ERROR: {error_msg}")
         return {"response": f"Groq Engine Error Details: {error_msg}"}
+
 
 @app.get("/", response_class=HTMLResponse)
 async def serve_home():
