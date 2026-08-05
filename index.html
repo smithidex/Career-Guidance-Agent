@@ -55,13 +55,13 @@
   }
 
   #sidebar{ transition: transform .25s ease; }
+  #sidebarBackdrop{ display:none; }
   @media (max-width: 900px){
     #sidebar{
       position:fixed; inset:0 auto 0 0; z-index:40;
       width:280px; transform:translateX(-100%);
     }
     #sidebar.open{ transform:translateX(0); }
-    #sidebarBackdrop{ display:none; }
     #sidebarBackdrop.open{ display:block; }
   }
 
@@ -385,3 +385,4 @@
 </script>
 </body>
 </html>
+
